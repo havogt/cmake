@@ -25,6 +25,24 @@ struct cmListFileArgument;
 class cmCommand
 {
 public:
+  struct cmakelsPosition
+  {
+    long line;
+    int character;
+  };
+
+  struct cmakelsRange
+  {
+    cmakelsPosition start;
+    cmakelsPosition end;
+  };
+
+  struct cmakelsLocation
+  {
+    std::string file;
+    cmakelsRange range;
+  };
+
   /**
    * Construct the command. By default it has no makefile.
    */
@@ -86,6 +104,8 @@ public:
    * Set the error message
    */
   void SetError(const std::string& e);
+
+  cmakelsLocation location;
 
 protected:
   cmMakefile* Makefile = nullptr;

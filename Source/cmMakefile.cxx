@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <cstring>
 #include <ctype.h>
+#include <iostream>
 #include <iterator>
 #include <memory> // IWYU pragma: keep
 #include <sstream>
@@ -359,7 +360,19 @@ private:
 bool cmMakefile::ExecuteCommand(const cmListFileFunction& lff,
                                 cmExecutionStatus& status)
 {
+
+  // std::cout << "  " << lff.Name.Original << " ("
+  //           << this->GetDefinition("CMAKE_CURRENT_LIST_FILE") << " at "
+  //           << lff.Line << ", col=" << lff.Col << ", endline=" <<
+  //           lff.EndLine
+  //           << ", endcol=" << lff.EndCol << ")" << std::endl;
   bool result = true;
+  // if (lff.Line == 6) {
+  //   std::cout << "breakpoint";
+  //   std::cout << "\n----\n";
+  //   this->GetBacktrace().PrintCallStack(std::cout);
+  //   std::cout << "\n----\n";
+  // }
 
   // quick return if blocked
   if (this->IsFunctionBlocked(lff, status)) {
@@ -395,6 +408,8 @@ bool cmMakefile::ExecuteCommand(const cmListFileFunction& lff,
     // Clone the prototype.
     std::unique_ptr<cmCommand> pcmd(proto->Clone());
     pcmd->SetMakefile(this);
+    pcmd->location.file = "TODO";
+    pcmd->location.range = { { lff.Line, -1 }, { -1, -1 } };
 
     // Decide whether to invoke the command.
     if (!cmSystemTools::GetFatalErrorOccured()) {
@@ -646,6 +661,7 @@ void cmMakefile::ReadListFile(cmListFile const& listFile,
 {
   // add this list file to the list of dependencies
   this->ListFiles.push_back(filenametoread);
+  this->ParsedListFiles.push_back(listFile);
 
   std::string currentParentFile =
     this->GetSafeDefinition("CMAKE_PARENT_LIST_FILE");

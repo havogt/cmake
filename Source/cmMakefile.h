@@ -547,6 +547,13 @@ public:
   {
     return this->ListFiles;
   }
+  /**
+   * Get the vector of parsed list files on which this makefile depends
+   */
+  const std::vector<cmListFile>& GetParsedListFiles() const
+  {
+    return this->ParsedListFiles;
+  }
   //! When the file changes cmake will be re-run from the build system.
   void AddCMakeDependFile(const std::string& file)
   {
@@ -922,6 +929,8 @@ protected:
 
   std::vector<std::string> ListFiles;
   std::vector<std::string> OutputFiles;
+
+  std::vector<cmListFile> ParsedListFiles;
 
   std::vector<cmInstallGenerator*> InstallGenerators;
   std::vector<cmTestGenerator*> TestGenerators;

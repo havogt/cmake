@@ -1,3 +1,5 @@
+build/
+
 # Exclude MacOS Finder files.
 .DS_Store
 
