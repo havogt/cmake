@@ -34,10 +34,17 @@ struct cmCommandContext
     cmCommandName& operator=(std::string const& name);
   } Name;
   long Line = 0;
+  long Col = 0;
+  long EndLine = 0;
+  long EndCol = 0;
+
   cmCommandContext() = default;
   cmCommandContext(const char* name, int line)
     : Name(name)
     , Line(line)
+    , Col(-1)
+    , EndLine(-1)
+    , EndCol(-1)
   {
   }
 };
@@ -65,6 +72,9 @@ struct cmListFileArgument
   std::string Value;
   Delimiter Delim = Unquoted;
   long Line = 0;
+  long Col = -1;
+  long LineEnd = -1;
+  long ColEnd = -1;
 };
 
 class cmListFileContext
@@ -185,6 +195,7 @@ struct cmListFile
                  cmListFileBacktrace const& lfbt);
 
   std::vector<cmListFileFunction> Functions;
+  std::string Filename;
 };
 
 #endif

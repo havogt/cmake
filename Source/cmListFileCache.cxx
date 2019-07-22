@@ -32,7 +32,7 @@ struct cmListFileParser
   void IssueFileOpenError(std::string const& text) const;
   void IssueError(std::string const& text) const;
   bool ParseFile();
-  bool ParseFunction(const char* name, long line);
+  bool ParseFunction(const char* name, long line, long length);
   bool AddArgument(cmListFileLexer_Token* token,
                    cmListFileArgument::Delimiter delim);
   cmListFile* ListFile;
@@ -118,7 +118,7 @@ bool cmListFileParser::ParseFile()
     } else if (token->type == cmListFileLexer_Token_Identifier) {
       if (haveNewline) {
         haveNewline = false;
-        if (this->ParseFunction(token->text, token->line)) {
+        if (this->ParseFunction(token->text, token->line, token->length)) {
           this->ListFile->Functions.push_back(this->Function);
         } else {
           return false;
@@ -151,6 +151,8 @@ bool cmListFile::ParseFile(const char* filename, cmMessenger* messenger,
     return false;
   }
 
+  Filename = filename;
+
   bool parseError = false;
 
   {
@@ -161,12 +163,13 @@ bool cmListFile::ParseFile(const char* filename, cmMessenger* messenger,
   return !parseError;
 }
 
-bool cmListFileParser::ParseFunction(const char* name, long line)
+bool cmListFileParser::ParseFunction(const char* name, long line, long col)
 {
   // Ininitialize a new function call.
   this->Function = cmListFileFunction();
   this->Function.Name = name;
   this->Function.Line = line;
+  this->Function.Col = col;
 
   // Command name has already been parsed.  Read the left paren.
   cmListFileLexer_Token* token;
@@ -208,6 +211,8 @@ bool cmListFileParser::ParseFunction(const char* name, long line)
       }
     } else if (token->type == cmListFileLexer_Token_ParenRight) {
       if (parenDepth == 0) {
+        this->Function.EndLine = token->line;
+        this->Function.EndCol = token->column;
         return true;
       }
       parenDepth--;
@@ -262,6 +267,11 @@ bool cmListFileParser::AddArgument(cmListFileLexer_Token* token,
                                    cmListFileArgument::Delimiter delim)
 {
   this->Function.Arguments.emplace_back(token->text, delim, token->line);
+  this->Function.Arguments.back().Col = token->column - 1;
+  this->Function.Arguments.back().LineEnd =
+    token->line; // TODO do multiline args exist?
+  this->Function.Arguments.back().ColEnd =
+    token->column - 1 + token->length; // TODO do multiline args exist?
   if (this->Separation == SeparationOkay) {
     return true;
   }
@@ -362,7 +372,9 @@ cmListFileBacktrace cmListFileBacktrace::Push(std::string const& file) const
 cmListFileBacktrace cmListFileBacktrace::Push(
   cmListFileContext const& lfc) const
 {
-  assert(this->TopEntry);
+  if (!this->TopEntry)
+    return *this;
+  // assert(this->TopEntry);
   assert(!this->TopEntry->IsBottom() || this->TopEntry->Bottom.IsValid());
   return cmListFileBacktrace(this->TopEntry, lfc);
 }
