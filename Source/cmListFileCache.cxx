@@ -10,6 +10,7 @@
 #include "cmSystemTools.h"
 
 #include <assert.h>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <utility>
@@ -32,7 +33,7 @@ struct cmListFileParser
   void IssueFileOpenError(std::string const& text) const;
   void IssueError(std::string const& text) const;
   bool ParseFile();
-  bool ParseFunction(const char* name, long line, long length);
+  bool ParseFunction(const char* name, long line, long col);
   bool AddArgument(cmListFileLexer_Token* token,
                    cmListFileArgument::Delimiter delim);
   cmListFile* ListFile;
@@ -118,7 +119,9 @@ bool cmListFileParser::ParseFile()
     } else if (token->type == cmListFileLexer_Token_Identifier) {
       if (haveNewline) {
         haveNewline = false;
-        if (this->ParseFunction(token->text, token->line, token->length)) {
+        std::cout << "\"" << token->text << "\": " << token->column
+                  << std::endl;
+        if (this->ParseFunction(token->text, token->line, token->column)) {
           this->ListFile->Functions.push_back(this->Function);
         } else {
           return false;
