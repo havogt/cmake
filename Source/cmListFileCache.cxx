@@ -10,7 +10,6 @@
 #include "cmSystemTools.h"
 
 #include <assert.h>
-#include <iostream>
 #include <memory>
 #include <sstream>
 #include <utility>
@@ -119,8 +118,6 @@ bool cmListFileParser::ParseFile()
     } else if (token->type == cmListFileLexer_Token_Identifier) {
       if (haveNewline) {
         haveNewline = false;
-        std::cout << "\"" << token->text << "\": " << token->column
-                  << std::endl;
         if (this->ParseFunction(token->text, token->line, token->column)) {
           this->ListFile->Functions.push_back(this->Function);
         } else {
