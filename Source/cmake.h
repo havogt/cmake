@@ -159,7 +159,12 @@ public:
   {
     return this->Run(args, false);
   }
-  int Run(const std::vector<std::string>& args, bool noconfigure);
+  int Run(const std::vector<std::string>& args, bool noconfigure)
+  {
+    return this->Run(args, false, false);
+  }
+  int Run(const std::vector<std::string>& args, bool noconfigure,
+          bool nogenerate);
 
   /**
    * Run the global generator Generate step.

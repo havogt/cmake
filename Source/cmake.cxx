@@ -1696,7 +1696,8 @@ void cmake::PreLoadCMakeFiles()
 }
 
 // handle a command line invocation
-int cmake::Run(const std::vector<std::string>& args, bool noconfigure)
+int cmake::Run(const std::vector<std::string>& args, bool noconfigure,
+               bool nogenerate)
 {
   // Process the arguments
   this->SetArgs(args);
@@ -1777,6 +1778,9 @@ int cmake::Run(const std::vector<std::string>& args, bool noconfigure)
                                 this->VSSolutionFile.c_str());
     }
 #endif
+    return ret;
+  }
+  if (nogenerate) {
     return ret;
   }
   ret = this->Generate();
