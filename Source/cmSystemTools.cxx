@@ -2171,10 +2171,12 @@ void cmSystemTools::FindCMakeResources(const char* argv0)
 {
   std::string exe_dir;
 #if defined(_WIN32) && !defined(__CYGWIN__)
-  (void)argv0; // ignore this on windows
-  wchar_t modulepath[_MAX_PATH];
-  ::GetModuleFileNameW(NULL, modulepath, sizeof(modulepath));
-  std::string path = cmsys::Encoding::ToNarrow(modulepath);
+  // (void)argv0; // ignore this on windows
+  // wchar_t modulepath[_MAX_PATH];
+  // ::GetModuleFileNameW(NULL, modulepath, sizeof(modulepath));
+  // std::string path = cmsys::Encoding::ToNarrow(modulepath);
+  // TODO cmake_query uses argv0 to set the path
+  std::string path = argv0;
   std::string realPath =
     cmSystemTools::GetRealPathResolvingWindowsSubst(path, NULL);
   if (realPath.empty()) {
