@@ -1158,6 +1158,19 @@ add_executable(cmake cmakemain.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
 list(APPEND _tools cmake)
 target_link_libraries(cmake CMakeLib)
 
+include(FetchContent)
+FetchContent_Declare(
+  cppdap
+  GIT_REPOSITORY https://github.com/google/cppdap.git
+  GIT_TAG        main
+)
+FetchContent_MakeAvailable(cppdap)
+
+add_executable(cmakedbg cmakemain.cxx cmcmd.cxx cmcmd.h cmakedbg.cxx ${MANIFEST_FILE})
+target_compile_definitions(cmakedbg PRIVATE CMAKEDBG)
+list(APPEND _tools cmakedbg)
+target_link_libraries(cmakedbg CMakeLib cppdap)
+
 # Build CTest executable
 add_executable(ctest ctest.cxx ${MANIFEST_FILE})
 list(APPEND _tools ctest)
