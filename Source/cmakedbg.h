@@ -1,8 +1,11 @@
 #pragma once
 #include <condition_variable>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <unordered_set>
+
+#include "dap/io.h"
 
 class EventSync
 {
@@ -12,6 +15,10 @@ public:
 
   // fire() sets signals the event, and unblocks any calls to wait().
   void fire();
+
+  void block();
+
+  bool is_blocking();
 
 private:
   std::mutex mutex;
@@ -58,6 +65,11 @@ public:
 private:
   EventHandler onEvent;
   std::mutex mutex;
-  int64_t line = 1;
   std::unordered_set<int64_t> breakpoints;
+
+public:
+  int64_t line = 1;
+  std::string sourcefile;
+  EventSync pauser;
+  std::shared_ptr<dap::Writer> log;
 };

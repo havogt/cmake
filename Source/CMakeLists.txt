@@ -722,6 +722,8 @@ set(SRCS
   cmDuration.cxx
 
   bindexplib.cxx
+
+  cmakedbg.cxx
   )
 
 SET_PROPERTY(SOURCE cmProcessOutput.cxx APPEND PROPERTY COMPILE_DEFINITIONS
@@ -892,6 +894,7 @@ target_link_libraries(CMakeLib cmsys
   ${CMAKE_LIBRHASH_LIBRARIES}
   ${CMake_KWIML_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
+  cppdap # TODO remove!!!
   )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "sparc")
@@ -1166,9 +1169,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cppdap)
 
-add_executable(cmakedbg cmakemain.cxx cmcmd.cxx cmcmd.h cmakedbg.cxx ${MANIFEST_FILE})
+add_executable(cmakedbg cmakemain.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
 target_compile_definitions(cmakedbg PRIVATE CMAKEDBG)
+target_compile_definitions(cmakedbg PRIVATE LOG_TO_FILE="/home/vogtha/projects/cmakedbg/playground/cmakedbg.log")
 list(APPEND _tools cmakedbg)
+target_link_libraries(CMakeLib cppdap) # TODO remove!!!
 target_link_libraries(cmakedbg CMakeLib cppdap)
 
 # Build CTest executable

@@ -3,7 +3,6 @@
 void EventSync::wait()
 {
   std::unique_lock<std::mutex> lock(mutex);
-  // fired = false;
   cv.wait(lock, [&] { return fired; });
 }
 
@@ -14,9 +13,23 @@ void EventSync::fire()
   cv.notify_all();
 }
 
+void EventSync::block()
+{
+  std::unique_lock<std::mutex> lock(mutex);
+  fired = false;
+}
+
+bool EventSync::is_blocking()
+{
+  std::unique_lock<std::mutex> lock(mutex);
+  return !fired;
+}
+
 Debugger::Debugger(EventHandler onEvent)
   : onEvent(std::move(onEvent))
 {
+  pauser.fire();
+  log = dap::file("/home/vogtha/projects/cmakedbg/playground/Debugger.log");
 }
 
 // TODO remove
@@ -27,19 +40,24 @@ constexpr int numSourceLines = 7;
 void Debugger::run()
 {
   std::unique_lock<std::mutex> lock(mutex);
-  for (int64_t i = 0; i < numSourceLines; i++) {
-    int64_t l = ((line + i) % numSourceLines) + 1;
-    if (breakpoints.count(l)) {
-      line = l;
-      lock.unlock();
-      onEvent(Event::BreakpointHit);
-      return;
-    }
-  }
+
+  // for (int64_t i = 0; i < numSourceLines; i++) {
+  //   int64_t l = ((line + i) % numSourceLines) + 1;
+  //   if (breakpoints.count(l)) {
+  //     line = l;
+  //     lock.unlock();
+  //     onEvent(Event::BreakpointHit);
+  //     return;
+  //   }
+  // }
+
+  pauser.fire();
 }
 
 void Debugger::pause()
 {
+  std::unique_lock<std::mutex> lock(mutex);
+  pauser.block();
   onEvent(Event::Paused);
 }
 

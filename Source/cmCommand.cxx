@@ -6,6 +6,11 @@
 
 #include "cmExecutionStatus.h"
 #include "cmMakefile.h"
+// #ifdef CMAKEDBG
+#include "cmakedbg.h"
+// #endif
+
+#include <iostream>
 
 struct cmListFileArgument;
 
@@ -15,9 +20,27 @@ void cmCommand::SetExecutionStatus(cmExecutionStatus* status)
   this->Makefile = &status->GetMakefile();
 }
 
+static bool endsWith(const std::string& str, const std::string& suffix)
+{
+  return str.size() >= suffix.size() &&
+    0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix);
+}
+
 bool cmCommand::InvokeInitialPass(const std::vector<cmListFileArgument>& args,
                                   cmExecutionStatus& status)
 {
+  // #ifdef CMAKEDBG
+  auto& debugger = Debugger::singleton();
+  dap::writef(debugger.log, "is_blocking = %d\n",
+              debugger.pauser.is_blocking());
+  auto filepath = this->Makefile->GetBacktrace().Top().FilePath;
+  if (debugger.pauser.is_blocking() && endsWith(filepath, "CMakeLists.txt")) {
+    debugger.line = args.front().Line;
+    debugger.sourcefile = this->Makefile->GetBacktrace().Top().FilePath;
+    debugger.pauser.wait();
+    debugger.pauser.block();
+  }
+  // #endif
   std::vector<std::string> expandedArguments;
   if (!this->Makefile->ExpandArguments(args, expandedArguments)) {
     // There was an error expanding arguments.  It was already

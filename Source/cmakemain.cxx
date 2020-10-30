@@ -36,6 +36,8 @@
 #  include "cmDynamicLoader.h"
 #endif
 
+#include <thread>
+
 #include "cmsys/Encoding.hxx"
 
 #ifdef CMAKEDBG
@@ -46,6 +48,7 @@
 
 #  include "cmakedbg.h"
 
+#  include "dap/dap.h"
 #  include "dap/io.h"
 #  include "dap/protocol.h"
 #  include "dap/session.h"
@@ -877,7 +880,7 @@ constexpr int64_t numSourceLines = 7;
 } // anonymous namespace
 
 // main() entry point to the DAP server.
-void dbg()
+std::unique_ptr<dap::Session> dbg(EventSync& terminate)
 {
 #  ifdef OS_WINDOWS
   // Change stdin & stdout from text mode to binary mode.
@@ -905,7 +908,7 @@ void dbg()
 
   // Signal events
   EventSync configured;
-  EventSync terminate;
+  // EventSync terminate;
 
   // Event handlers from the Debugger.
   auto onDebuggerEvent = [&](Debugger::Event onEvent) {
@@ -994,6 +997,7 @@ void dbg()
     dap::Source source;
     source.sourceReference = sourceReferenceId;
     source.name = "HelloDebuggerSource";
+    source.path = debugger.sourcefile;
 
     dap::StackFrame frame;
     frame.line = debugger.currentLine();
@@ -1125,13 +1129,13 @@ void dbg()
   // https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Source
   session->registerHandler([&](const dap::SourceRequest& request)
                              -> dap::ResponseOrError<dap::SourceResponse> {
-    if (request.sourceReference != sourceReferenceId) {
-      return dap::Error("Unknown source reference '%d'",
-                        int(request.sourceReference));
-    }
+    // if (request.sourceReference != sourceReferenceId) {
+    //   return dap::Error("Unknown source reference '%d'",
+    //                     int(request.sourceReference));
+    // }
 
     dap::SourceResponse response;
-    response.content = sourceContent;
+    response.content = debugger.sourcefile; // TODO open file
     return response;
   });
 
@@ -1186,15 +1190,20 @@ void dbg()
 
   // Block until we receive a 'terminateDebuggee' request or encounter a
   // session error.
-  terminate.wait();
+  // terminate.wait();
+  return session;
 }
 
 #endif
 
-int main(int ac, char const* const* av)
+int main(int ac, char const** av)
 {
+
 #ifdef CMAKEDBG
-  dbg();
+  // sleep to have the chance to attach a debugger
+  std::this_thread::sleep_for(std::chrono::seconds(20));
+  EventSync terminate;
+  auto session = dbg(terminate);
   // return 0;
 #endif
 
@@ -1207,7 +1216,7 @@ int main(int ac, char const* const* av)
   cmsys::Encoding::CommandLineArguments args =
     cmsys::Encoding::CommandLineArguments::Main(ac, av);
   ac = args.argc();
-  av = args.argv();
+  // av = args.argv();
 
   cmSystemTools::InitializeLibUV();
   cmSystemTools::FindCMakeResources(av[0]);
@@ -1225,12 +1234,23 @@ int main(int ac, char const* const* av)
       return do_command(ac, av, std::move(consoleBuf));
     }
   }
-  int ret = do_cmake(ac, av);
+
+  // TODO hack
+  // const char* avhack[2];
+  av[1] = "/home/vogtha/projects/cmakedbg/playground/";
+  int ret = do_cmake(2, av);
+#ifdef CMAKEDBG
+  Debugger::singleton().pauser.fire();
+#endif
 #ifndef CMAKE_BOOTSTRAP
   cmDynamicLoader::FlushCache();
 #endif
   if (uv_loop_t* loop = uv_default_loop()) {
     uv_loop_close(loop);
   }
+#ifdef CMAKEDBG
+  terminate.wait();
+  // dap::terminate();
+#endif
   return ret;
 }
