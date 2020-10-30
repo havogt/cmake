@@ -26,6 +26,8 @@
 #  include <cm3p/json/writer.h>
 #endif
 
+#include <iostream>
+
 #include "cmsys/FStream.hxx"
 #include "cmsys/RegularExpression.hxx"
 
@@ -65,12 +67,12 @@
 #include "cmWorkingDirectory.h"
 #include "cmake.h"
 
-#include <iostream>
-
 #ifndef CMAKE_BOOTSTRAP
 #  include "cmMakefileProfilingData.h"
 #  include "cmVariableWatch.h"
 #endif
+
+#include "cmakedbg.h"
 
 class cmMessenger;
 
@@ -460,6 +462,14 @@ bool cmMakefile::ExecuteCommand(const cmListFileFunction& lff,
       if (this->GetCMakeInstance()->GetTrace()) {
         this->PrintCommandTrace(lff, this->Backtrace.Top().DeferId);
       }
+
+      auto& debugger = Debugger::singleton();
+      auto filepath = status.GetMakefile().GetBacktrace().Top().FilePath;
+      debugger.line = lff.Line();
+      debugger.sourcefile = filepath;
+      debugger.pauser.wait();
+      debugger.pause();
+
       // Try invoking the command.
       bool invokeSucceeded = command(lff.Arguments(), status);
       bool hadNestedError = status.GetNestedError();
@@ -795,12 +805,13 @@ void cmMakefile::RunListFile(cmListFile const& listFile,
     //     auto const& backtrace = status.GetMakefile().GetBacktrace();
     //     for(auto& def: status.GetMakefile().GetDefinitions())
     //     {
-    //       std::cout << def << "=" << *(status.GetMakefile().GetDefinition(def))<< std::endl;
+    //       std::cout << def << "=" <<
+    //       *(status.GetMakefile().GetDefinition(def))<< std::endl;
     //     }
     //   } else {
     //     break;
     //   }
-    // } 
+    // }
     this->ExecuteCommand(listFile.Functions[i], status);
     if (cmSystemTools::GetFatalErrorOccured()) {
       break;

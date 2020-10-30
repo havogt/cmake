@@ -722,6 +722,8 @@ set(SRCS
   cmDuration.cxx
 
   bindexplib.cxx
+  
+  cmakedbg.cxx 
   )
 
 SET_PROPERTY(SOURCE cmProcessOutput.cxx APPEND PROPERTY COMPILE_DEFINITIONS
@@ -1166,9 +1168,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cppdap)
 
-add_executable(cmakedbg cmakedbg.cxx cmakemain.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
+add_executable(cmakedbg cmakemain.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
 target_compile_definitions(cmakedbg PRIVATE CMAKEDBG)
-target_compile_definitions(cmakedbg PRIVATE LOG_TO_FILE="/home/vogtha/projects/cmakedbg/playground/cmakedbg.log")
+target_compile_definitions(cmakedbg PRIVATE LOG_TO_FILE="/home/vogtha/git/cmake/tmp/cmakedbg.log")
 list(APPEND _tools cmakedbg)
 target_link_libraries(cmakedbg CMakeLib cppdap)
 
