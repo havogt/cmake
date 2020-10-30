@@ -787,20 +787,20 @@ void cmMakefile::RunListFile(cmListFile const& listFile,
   const size_t numberFunctions = listFile.Functions.size();
   for (size_t i = 0; i < numberFunctions; ++i) {
     cmExecutionStatus status(*this);
-    std::cout << listFile.Functions[i].OriginalName() << std::endl;
-    char c;
-    while(true) {
-      std::cin >> c;
-      if(c == 'p') {
-        auto const& backtrace = status.GetMakefile().GetBacktrace();
-        for(auto& def: status.GetMakefile().GetDefinitions())
-        {
-          std::cout << def << "=" << *(status.GetMakefile().GetDefinition(def))<< std::endl;
-        }
-      } else {
-        break;
-      }
-    } 
+    // std::cout << listFile.Functions[i].OriginalName() << std::endl;
+    // char c;
+    // while(true) {
+    //   std::cin >> c;
+    //   if(c == 'p') {
+    //     auto const& backtrace = status.GetMakefile().GetBacktrace();
+    //     for(auto& def: status.GetMakefile().GetDefinitions())
+    //     {
+    //       std::cout << def << "=" << *(status.GetMakefile().GetDefinition(def))<< std::endl;
+    //     }
+    //   } else {
+    //     break;
+    //   }
+    // } 
     this->ExecuteCommand(listFile.Functions[i], status);
     if (cmSystemTools::GetFatalErrorOccured()) {
       break;

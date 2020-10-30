@@ -857,7 +857,16 @@ int main(int ac, char const* const* av)
       return do_command(ac, av, std::move(consoleBuf));
     }
   }
-  int ret = do_cmake(ac, av);
+
+  // TODO remove
+  int ac2 = 5;
+  char const* av2[5];
+  av2[1] = "-B";
+  av2[2] = "/home/vogtha/git/cmake/tmp/build";
+  av2[3] = "-S";
+  av2[4] = "/home/vogtha/git/cmake/tmp";
+  // TODO END
+  int ret = do_cmake(ac2, av2);
 #ifndef CMAKE_BOOTSTRAP
   cmDynamicLoader::FlushCache();
 #endif
