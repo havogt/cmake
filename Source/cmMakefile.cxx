@@ -469,43 +469,51 @@ bool cmMakefile::ExecuteCommand(const cmListFileFunction& lff,
         auto cur_backtrace_depth = this->GetBacktrace().Depth();
         debugger.line = lff.Line();
         debugger.sourcefile = filepath;
+
+        bool was_blocking = false;
         switch (debugger.pauseAction) {
           case Debugger::PauseAction::Pause:
             debugger.backtrace = this->GetBacktrace();
             debugger.pauser.wait();
+            was_blocking = true;
             break;
           case Debugger::PauseAction::StepInto:
             debugger.backtrace = this->GetBacktrace();
             debugger.pauser.wait();
+            was_blocking = true;
             break;
           case Debugger::PauseAction::StepOver:
             if (cur_backtrace_depth <= debugger.backtrace_depth) {
               debugger.backtrace = this->GetBacktrace();
               debugger.pauser.wait();
+              was_blocking = true;
             }
             break;
           case Debugger::PauseAction::StepOut:
             if (cur_backtrace_depth < debugger.backtrace_depth) {
               debugger.backtrace = this->GetBacktrace();
               debugger.pauser.wait();
+              was_blocking = true;
             }
             break;
           case Debugger::PauseAction::None:
             break;
         }
 
-        switch (debugger.pauseAction) {
-          case Debugger::PauseAction::Pause:
-            debugger.backtrace_depth = cur_backtrace_depth;
-            break;
-          case Debugger::PauseAction::StepInto:
-          case Debugger::PauseAction::StepOver:
-          case Debugger::PauseAction::StepOut:
-            debugger.pauser.block();
-            debugger.backtrace_depth = cur_backtrace_depth;
-            break;
-          case Debugger::PauseAction::None:
-            break;
+        if (was_blocking) {
+          switch (debugger.pauseAction) {
+            case Debugger::PauseAction::Pause:
+              debugger.backtrace_depth = cur_backtrace_depth;
+              break;
+            case Debugger::PauseAction::StepInto:
+            case Debugger::PauseAction::StepOver:
+            case Debugger::PauseAction::StepOut:
+              debugger.pauser.block();
+              debugger.backtrace_depth = cur_backtrace_depth;
+              break;
+            case Debugger::PauseAction::None:
+              break;
+          }
         }
       }
       // debugger.pauser.wait();
