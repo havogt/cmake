@@ -1,33 +1,44 @@
 #include "cmakedbg.h"
 
-void Event::wait() {
+#include <mutex>
+
+void Event::wait()
+{
   std::unique_lock<std::mutex> lock(mutex);
   cv.wait(lock, [&] { return fired; });
 }
 
-void Event::fire() {
+void Event::fire()
+{
   std::unique_lock<std::mutex> lock(mutex);
   fired = true;
   cv.notify_all();
 }
 
-
-void EventSyncAdvanced::wait() {
+void EventSyncAdvanced::wait()
+{
   std::unique_lock<std::mutex> lock(mutex);
-  if(block_) {
+  if (block_) {
     cv.wait(lock, [&] { return !block_; });
   }
 }
 
-void EventSyncAdvanced::release() {
+void EventSyncAdvanced::release()
+{
   std::unique_lock<std::mutex> lock(mutex);
   block_ = false;
   cv.notify_all();
 }
 
-void EventSyncAdvanced::block() {
+void EventSyncAdvanced::block()
+{
   std::unique_lock<std::mutex> lock(mutex);
   block_ = true;
+}
+
+bool EventSyncAdvanced::is_blocking() const
+{
+  return block_;
 }
 
 // TODO remove
@@ -37,7 +48,8 @@ constexpr int numSourceLines = 7;
 Debugger::Debugger(EventHandler onEvent)
   : onEvent(std::move(onEvent))
 {
-//   log = dap::file("/home/vogtha/projects/cmakedbg/playground/Debugger.log");
+  //   log =
+  //   dap::file("/home/vogtha/projects/cmakedbg/playground/Debugger.log");
 }
 
 void Debugger::run()
@@ -60,6 +72,7 @@ void Debugger::run()
 void Debugger::pause()
 {
   std::unique_lock<std::mutex> lock(mutex);
+  pauseAction = PauseAction::Pause;
   pauser.block();
   onEvent(Event::Paused);
 }
@@ -70,11 +83,30 @@ int64_t Debugger::currentLine()
   return line;
 }
 
-void Debugger::stepForward()
+void Debugger::stepOver()
+{
+  //   std::unique_lock<std::mutex> lock(mutex);
+  //   line = (line % numSourceLines) + 1;
+  //   lock.unlock();
+  std::unique_lock<std::mutex> lock(mutex);
+  pauseAction = PauseAction::StepOver;
+  pauser.release();
+  onEvent(Event::Stepped);
+}
+
+void Debugger::stepOut()
 {
   std::unique_lock<std::mutex> lock(mutex);
-  line = (line % numSourceLines) + 1;
-  lock.unlock();
+  pauseAction = PauseAction::StepOut;
+  pauser.release();
+  onEvent(Event::Stepped);
+}
+
+void Debugger::stepInto()
+{
+  std::unique_lock<std::mutex> lock(mutex);
+  pauseAction = PauseAction::StepInto;
+  pauser.release();
   onEvent(Event::Stepped);
 }
 

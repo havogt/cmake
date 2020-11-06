@@ -5,22 +5,26 @@
 #include <mutex>
 #include <unordered_set>
 
-class Event {
- public:
+#include "cmListFileCache.h"
+
+class Event
+{
+public:
   // wait() blocks until the event is fired.
   void wait();
 
   // fire() sets signals the event, and unblocks any calls to wait().
   void fire();
 
- private:
+private:
   std::mutex mutex;
   std::condition_variable cv;
   bool fired = false;
 };
 
-class EventSyncAdvanced {
- public:
+class EventSyncAdvanced
+{
+public:
   // wait() blocks if block==true, until the event is fired.
   void wait();
 
@@ -30,9 +34,9 @@ class EventSyncAdvanced {
   // block sets the blocker
   void block();
 
-//   bool is_blocking();
+  bool is_blocking() const;
 
- private:
+private:
   std::mutex mutex;
   std::condition_variable cv;
   bool block_ = false;
@@ -63,8 +67,11 @@ public:
   // currentLine() returns the currently executing line number.
   int64_t currentLine();
 
-  // stepForward() instructs the debugger to step forward one line.
-  void stepForward();
+  void stepOver();
+
+  void stepInto();
+
+  void stepOut();
 
   // clearBreakpoints() clears all set breakpoints.
   void clearBreakpoints();
@@ -78,8 +85,19 @@ private:
   std::unordered_set<int64_t> breakpoints;
 
 public:
+  enum class PauseAction
+  {
+    None,
+    Pause,
+    StepOver,
+    StepInto,
+    StepOut
+  };
   int64_t line = 1;
   std::string sourcefile;
   EventSyncAdvanced pauser;
-//  std::shared_ptr<dap::Writer> log;
+  int backtrace_depth = 0;
+  PauseAction pauseAction = PauseAction::Pause;
+  cmListFileBacktrace backtrace;
+  //  std::shared_ptr<dap::Writer> log;
 };

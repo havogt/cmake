@@ -908,7 +908,6 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
   auto onDebuggerEvent = [&](Debugger::Event onEvent) {
     switch (onEvent) {
       case Debugger::Event::Stepped: {
-        // The debugger has single-line stepped. Inform the client.
         dap::StoppedEvent event;
         event.reason = "step";
         event.threadId = threadId;
@@ -988,20 +987,29 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
       return dap::Error("Unknown threadId '%d'", int(request.threadId));
     }
 
-    dap::Source source;
-    source.sourceReference = sourceReferenceId;
-    source.name = debugger.sourcefile;
-    source.path = debugger.sourcefile;
-
-    dap::StackFrame frame;
-    frame.line = debugger.currentLine();
-    frame.column = 1;
-    frame.name = "HelloDebugger";
-    frame.id = frameId;
-    frame.source = source;
-
     dap::StackTraceResponse response;
-    response.stackFrames.push_back(frame);
+
+    auto trace = debugger.backtrace;
+    while (!trace.Empty()) {
+      cmListFileContext top = trace.Top();
+
+      dap::Source source;
+      source.sourceReference = sourceReferenceId;
+      source.name = top.FilePath;
+      source.path = top.FilePath;
+
+      dap::StackFrame frame;
+      frame.line = top.Line;
+      frame.column = 1;
+      frame.name = top.Name;
+      frame.id = frameId;
+      frame.source = source;
+
+      response.stackFrames.push_back(frame);
+
+      trace = trace.Pop();
+    }
+
     return response;
   });
 
@@ -1036,6 +1044,11 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
                         int(request.variablesReference));
     }
 
+    dap::Variable backtraceVar;
+    backtraceVar.name = "backtrace_depth";
+    backtraceVar.value = std::to_string(debugger.backtrace_depth);
+    backtraceVar.type = "int";
+
     dap::Variable currentLineVar;
     currentLineVar.name = "currentLine";
     currentLineVar.value = std::to_string(debugger.currentLine());
@@ -1043,6 +1056,7 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
 
     dap::VariablesResponse response;
     response.variables.push_back(currentLineVar);
+    response.variables.push_back(backtraceVar);
     return response;
   });
 
@@ -1066,7 +1080,7 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
   // thread.
   // https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Next
   session->registerHandler([&](const dap::NextRequest&) {
-    debugger.stepForward();
+    debugger.stepOver();
     return dap::NextResponse();
   });
 
@@ -1075,7 +1089,7 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
   // https://microsoft.github.io/debug-adapter-protocol/specification#Requests_StepIn
   session->registerHandler([&](const dap::StepInRequest&) {
     // Step-in treated as step-over as there's only one stack frame.
-    debugger.stepForward();
+    debugger.stepInto();
     return dap::StepInResponse();
   });
 
@@ -1084,6 +1098,7 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
   // https://microsoft.github.io/debug-adapter-protocol/specification#Requests_StepOut
   session->registerHandler([&](const dap::StepOutRequest&) {
     // Step-out is not supported as there's only one stack frame.
+    debugger.stepOut();
     return dap::StepOutResponse();
   });
 
