@@ -469,6 +469,8 @@ bool cmMakefile::ExecuteCommand(const cmListFileFunction& lff,
         auto cur_backtrace_depth = this->GetBacktrace().Depth();
         debugger.line = lff.Line();
         debugger.sourcefile = filepath;
+        debugger.state_snapshot = this->GetStateSnapshot();
+        debugger.state = this->GetState();
 
         bool was_blocking = false;
         switch (debugger.pauseAction) {
@@ -516,8 +518,6 @@ bool cmMakefile::ExecuteCommand(const cmListFileFunction& lff,
           }
         }
       }
-      // debugger.pauser.wait();
-      // debugger.pause();
 
       // Try invoking the command.
       bool invokeSucceeded = command(lff.Arguments(), status);

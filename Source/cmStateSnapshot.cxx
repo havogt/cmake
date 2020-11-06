@@ -208,6 +208,21 @@ bool cmStateSnapshot::HasDefinedPolicyCMP0011()
   return !this->Position->Policies->IsEmpty();
 }
 
+std::vector<std::pair<std::string, std::string>>
+cmStateSnapshot::GetDefinitions() const
+{
+  // TODO doesn't work...
+  std::vector<std::pair<std::string, std::string>> result;
+  if (this->Position.IsValid()) {
+    auto keys =
+      cmDefinitions::ClosureKeys(this->Position->Vars, this->Position->Root);
+    for (auto const& key : keys) {
+      result.emplace_back(std::make_pair(key, *this->GetDefinition(key)));
+    }
+  }
+  return result;
+}
+
 std::string const* cmStateSnapshot::GetDefinition(
   std::string const& name) const
 {

@@ -1023,13 +1023,19 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
       return dap::Error("Unknown frameId '%d'", int(request.frameId));
     }
 
-    dap::Scope scope;
-    scope.name = "Locals";
-    scope.presentationHint = "locals";
-    scope.variablesReference = 1234; // variablesReferenceId;
+    dap::Scope locals;
+    locals.name = "Locals";
+    locals.presentationHint = "locals";
+    locals.variablesReference = 1; // variablesReferenceId;
+
+    dap::Scope cache;
+    cache.name = "Cache Variable";
+    cache.presentationHint = "cache";
+    cache.variablesReference = 2; // variablesReferenceId;
 
     dap::ScopesResponse response;
-    response.scopes.push_back(scope);
+    response.scopes.push_back(locals);
+    response.scopes.push_back(cache);
     return response;
   });
 
@@ -1039,24 +1045,44 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
   // https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Variables
   session->registerHandler([&](const dap::VariablesRequest& request)
                              -> dap::ResponseOrError<dap::VariablesResponse> {
-    if (request.variablesReference != 1234) {
+    if (!(request.variablesReference == 1 ||
+          request.variablesReference == 2)) {
       return dap::Error("Unknown variablesReference '%d'",
                         int(request.variablesReference));
     }
 
-    dap::Variable backtraceVar;
-    backtraceVar.name = "backtrace_depth";
-    backtraceVar.value = std::to_string(debugger.backtrace_depth);
-    backtraceVar.type = "int";
-
-    dap::Variable currentLineVar;
-    currentLineVar.name = "currentLine";
-    currentLineVar.value = std::to_string(debugger.currentLine());
-    currentLineVar.type = "int";
-
     dap::VariablesResponse response;
-    response.variables.push_back(currentLineVar);
-    response.variables.push_back(backtraceVar);
+    if (request.variablesReference == 1) {
+      // dap::Variable backtraceVar;
+      // backtraceVar.name = "backtrace_depth";
+      // backtraceVar.value = std::to_string(debugger.backtrace_depth);
+      // backtraceVar.type = "int";
+
+      // dap::Variable currentLineVar;
+      // currentLineVar.name = "currentLine";
+      // currentLineVar.value = std::to_string(debugger.currentLine());
+      // currentLineVar.type = "int";
+
+      // response.variables.push_back(currentLineVar);
+      // response.variables.push_back(backtraceVar);
+
+      for (auto const& var : debugger.state_snapshot.GetDefinitions()) {
+        dap::Variable dapvar;
+        dapvar.name = var.first;
+        dapvar.value = var.second;
+        dapvar.type = "string";
+        response.variables.push_back(dapvar);
+      }
+
+    } else if (request.variablesReference == 2) {
+      for (auto const& key : debugger.state->GetCacheEntryKeys()) {
+        dap::Variable dapvar;
+        dapvar.name = key;
+        dapvar.value = *debugger.state->GetCacheEntryValue(key);
+        dapvar.type = "string";
+        response.variables.push_back(dapvar);
+      }
+    }
     return response;
   });
 

@@ -6,6 +6,7 @@
 #include <unordered_set>
 
 #include "cmListFileCache.h"
+#include "cmStateSnapshot.h"
 
 class Event
 {
@@ -99,5 +100,7 @@ public:
   int backtrace_depth = 0;
   PauseAction pauseAction = PauseAction::Pause;
   cmListFileBacktrace backtrace;
+  cmStateSnapshot state_snapshot;
+  cmState* state;
   //  std::shared_ptr<dap::Writer> log;
 };
