@@ -1001,7 +1001,7 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
       dap::StackFrame frame;
       frame.line = top.Line;
       frame.column = 1;
-      frame.name = top.Name;
+      frame.name = top.Line == 0 ? "File entered: " : top.Name;
       frame.id = frameId;
       frame.source = source;
 
