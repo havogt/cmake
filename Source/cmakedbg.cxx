@@ -77,7 +77,6 @@ void Debugger::pause()
   std::unique_lock<std::mutex> lock(mutex);
   pauseAction = PauseAction::Pause;
   pauser.block();
-  onEvent(Event::Paused);
 }
 
 int64_t Debugger::currentLine()
@@ -94,7 +93,6 @@ void Debugger::stepOver()
   std::unique_lock<std::mutex> lock(mutex);
   pauseAction = PauseAction::StepOver;
   pauser.release();
-  onEvent(Event::Stepped);
 }
 
 void Debugger::stepOut()
@@ -102,7 +100,6 @@ void Debugger::stepOut()
   std::unique_lock<std::mutex> lock(mutex);
   pauseAction = PauseAction::StepOut;
   pauser.release();
-  onEvent(Event::Stepped);
 }
 
 void Debugger::stepInto()
@@ -110,7 +107,6 @@ void Debugger::stepInto()
   std::unique_lock<std::mutex> lock(mutex);
   pauseAction = PauseAction::StepInto;
   pauser.release();
-  onEvent(Event::Stepped);
 }
 
 void Debugger::clearBreakpoints()
@@ -141,17 +137,20 @@ void Debugger::handleStop(cmListFileBacktrace backtrace,
     switch (pauseAction) {
       case Debugger::PauseAction::Pause:
         this->backtrace = backtrace;
+        onEvent(Event::Paused);
         pauser.wait();
         was_blocking = true;
         break;
       case Debugger::PauseAction::StepInto:
         this->backtrace = backtrace;
+        onEvent(Event::Stepped);
         pauser.wait();
         was_blocking = true;
         break;
       case Debugger::PauseAction::StepOver:
         if (cur_backtrace_depth <= backtrace_depth) {
           this->backtrace = backtrace;
+          onEvent(Event::Stepped);
           pauser.wait();
           was_blocking = true;
         }
@@ -159,6 +158,7 @@ void Debugger::handleStop(cmListFileBacktrace backtrace,
       case Debugger::PauseAction::StepOut:
         if (cur_backtrace_depth < backtrace_depth) {
           this->backtrace = backtrace;
+          onEvent(Event::Stepped);
           pauser.wait();
           was_blocking = true;
         }
