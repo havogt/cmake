@@ -2,6 +2,9 @@
 
 #include <mutex>
 
+#include "cmListFileCache.h"
+#include "cmStateSnapshot.h"
+
 void Event::wait()
 {
   std::unique_lock<std::mutex> lock(mutex);
@@ -120,6 +123,66 @@ void Debugger::addBreakpoint(int64_t l)
 {
   std::unique_lock<std::mutex> lock(mutex);
   this->breakpoints.emplace(l);
+}
+
+void Debugger::handleStop(cmListFileBacktrace backtrace,
+                          cmListFileFunction const& lff,
+                          cmStateSnapshot state_snapshot, cmState* state)
+{
+  if (pauser.is_blocking()) {
+    auto filepath = backtrace.Top().FilePath;
+    auto cur_backtrace_depth = backtrace.Depth();
+    line = lff.Line();
+    sourcefile = filepath;
+    this->state_snapshot = state_snapshot;
+    this->state = state;
+
+    bool was_blocking = false;
+    switch (pauseAction) {
+      case Debugger::PauseAction::Pause:
+        this->backtrace = backtrace;
+        pauser.wait();
+        was_blocking = true;
+        break;
+      case Debugger::PauseAction::StepInto:
+        this->backtrace = backtrace;
+        pauser.wait();
+        was_blocking = true;
+        break;
+      case Debugger::PauseAction::StepOver:
+        if (cur_backtrace_depth <= backtrace_depth) {
+          this->backtrace = backtrace;
+          pauser.wait();
+          was_blocking = true;
+        }
+        break;
+      case Debugger::PauseAction::StepOut:
+        if (cur_backtrace_depth < backtrace_depth) {
+          this->backtrace = backtrace;
+          pauser.wait();
+          was_blocking = true;
+        }
+        break;
+      case Debugger::PauseAction::None:
+        break;
+    }
+
+    if (was_blocking) {
+      switch (pauseAction) {
+        case Debugger::PauseAction::Pause:
+          backtrace_depth = cur_backtrace_depth;
+          break;
+        case Debugger::PauseAction::StepInto:
+        case Debugger::PauseAction::StepOver:
+        case Debugger::PauseAction::StepOut:
+          pauser.block();
+          backtrace_depth = cur_backtrace_depth;
+          break;
+        case Debugger::PauseAction::None:
+          break;
+      }
+    }
+  }
 }
 
 Debugger& Debugger::singleton(EventHandler onEvent)

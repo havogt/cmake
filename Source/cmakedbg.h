@@ -80,6 +80,9 @@ public:
   // addBreakpoint() sets a new breakpoint on the given line.
   void addBreakpoint(int64_t line);
 
+  void handleStop(cmListFileBacktrace backtrace, cmListFileFunction const& lff,
+                  cmStateSnapshot state_snapshot, cmState* state);
+
 private:
   EventHandler onEvent;
   std::mutex mutex;
