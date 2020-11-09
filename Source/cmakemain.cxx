@@ -29,11 +29,8 @@
 #include "cmStringAlgorithms.h"
 #include "cmSystemTools.h"
 #include "cmake.h"
+#include "cmakedap.h"
 #include "cmcmd.h"
-
-#ifdef CMAKEDBG
-#  include "cmakedap.h"
-#endif
 
 #ifndef CMAKE_BOOTSTRAP
 #  include "cmDocumentation.h"
@@ -834,14 +831,6 @@ int do_open(int ac, char const* const* av)
 
 int main(int ac, char const* const* av)
 {
-#ifdef CMAKEDBG
-  // sleep to have the chance to attach a debugger
-  // std::this_thread::sleep_for(std::chrono::seconds(20));
-  Event terminate;
-  auto session = dbg(terminate);
-// return 0;
-#endif
-
   cmSystemTools::EnsureStdPipes();
 
   // Replace streambuf so we can output Unicode to console
@@ -856,6 +845,11 @@ int main(int ac, char const* const* av)
   cmSystemTools::InitializeLibUV();
   cmSystemTools::FindCMakeResources(av[0]);
   if (ac > 1) {
+    if (strcmp(av[1], "--dap") == 0) {
+      Event terminate;
+      auto session = dbg(terminate);
+      return do_cmake(ac, av);
+    }
     if (strcmp(av[1], "--build") == 0) {
       return do_build(ac, av);
     }
@@ -870,15 +864,7 @@ int main(int ac, char const* const* av)
     }
   }
 
-  // TODO remove
-  int ac2 = 5;
-  char const* av2[5];
-  av2[1] = "-B";
-  av2[2] = "/home/vogtha/git/cmake/tmp/build";
-  av2[3] = "-S";
-  av2[4] = "/home/vogtha/git/cmake/tmp";
-  // TODO END
-  int ret = do_cmake(ac2, av2);
+  int ret = do_cmake(ac, av);
 #ifndef CMAKE_BOOTSTRAP
   cmDynamicLoader::FlushCache();
 #endif

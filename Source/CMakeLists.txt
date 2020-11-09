@@ -1155,11 +1155,6 @@ if(APPLE)
   target_link_libraries(OSXScriptLauncher "-framework CoreFoundation")
 endif()
 
-# Build CMake executable
-add_executable(cmake cmakemain.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
-list(APPEND _tools cmake)
-target_link_libraries(cmake CMakeLib)
-
 include(FetchContent)
 FetchContent_Declare(
   cppdap
@@ -1168,11 +1163,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cppdap)
 
-add_executable(cmakedbg cmakemain.cxx cmakedap.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
-target_compile_definitions(cmakedbg PRIVATE CMAKEDBG)
-target_compile_definitions(cmakedbg PRIVATE LOG_TO_FILE="/home/vogtha/git/cmake/tmp/cmakedbg.log")
-list(APPEND _tools cmakedbg)
-target_link_libraries(cmakedbg CMakeLib cppdap)
+# Build CMake executable
+add_executable(cmake cmakemain.cxx cmakedap.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
+list(APPEND _tools cmake)
+target_link_libraries(cmake CMakeLib cppdap)
+target_compile_definitions(cmake PRIVATE LOG_TO_FILE="/home/vogtha/git/cmake/tmp/cmakedbg.log")
 
 # Build CTest executable
 add_executable(ctest ctest.cxx ${MANIFEST_FILE})
