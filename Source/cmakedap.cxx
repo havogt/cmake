@@ -1,3 +1,5 @@
+#include "cmakedap.h"
+
 #include <condition_variable>
 #include <cstdio>
 #include <mutex>
@@ -26,7 +28,7 @@
 #endif               // OS_WINDOWS
 
 // main() entry point to the DAP server.
-std::unique_ptr<dap::Session> dbg(Event& terminate)
+std::unique_ptr<dap::Session> dbg()
 {
 #ifdef OS_WINDOWS
   // Change stdin & stdout from text mode to binary mode.
@@ -96,7 +98,6 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
       dap::writef(log, "dap::Session error: %s\n", msg);
       log->close();
     }
-    terminate.fire();
   });
 
   // The Initialize request is the first message sent from the client and
@@ -335,9 +336,9 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
 
   // Handler for disconnect requests
   session->registerHandler([&](const dap::DisconnectRequest& request) {
-    if (request.terminateDebuggee.value(false)) {
-      terminate.fire();
-    }
+    // if (request.terminateDebuggee.value(false)) {
+    //   terminate.fire();
+    // }
     return dap::DisconnectResponse();
   });
 
@@ -375,8 +376,5 @@ std::unique_ptr<dap::Session> dbg(Event& terminate)
   // This sends a stopped event to the client.
   debugger.pause();
 
-  // Block until we receive a 'terminateDebuggee' request or encounter a
-  // session error.
-  // terminate.wait();
   return session;
 }

@@ -11,6 +11,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -31,6 +32,8 @@
 #include "cmake.h"
 #include "cmakedap.h"
 #include "cmcmd.h"
+
+#include "dap/protocol.h"
 
 #ifndef CMAKE_BOOTSTRAP
 #  include "cmDocumentation.h"
@@ -846,9 +849,17 @@ int main(int ac, char const* const* av)
   cmSystemTools::FindCMakeResources(av[0]);
   if (ac > 1) {
     if (strcmp(av[1], "--dap") == 0) {
-      Event terminate;
-      auto session = dbg(terminate);
-      return do_cmake(ac, av);
+      if (ac > 2 && strcmp(av[2], "--pause") == 0) {
+        std::this_thread::sleep_for(std::chrono::seconds{ 20 });
+      }
+      auto session = dbg();
+      int ret = do_cmake(ac, av);
+      dap::TerminatedEvent terminated_event;
+      session->send(terminated_event);
+      dap::ExitedEvent exit_event;
+      exit_event.exitCode = ret;
+      session->send(exit_event);
+      return ret;
     }
     if (strcmp(av[1], "--build") == 0) {
       return do_build(ac, av);

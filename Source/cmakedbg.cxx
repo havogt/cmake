@@ -44,10 +44,6 @@ bool EventSyncAdvanced::is_blocking() const
   return block_;
 }
 
-// TODO remove
-
-constexpr int numSourceLines = 7;
-
 Debugger::Debugger(EventHandler onEvent)
   : onEvent(std::move(onEvent))
 {
@@ -68,7 +64,7 @@ void Debugger::run()
   //     return;
   //   }
   // }
-
+  pauseAction = PauseAction::None;
   pauser.release();
 }
 
