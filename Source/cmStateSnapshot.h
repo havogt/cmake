@@ -23,6 +23,7 @@ public:
   cmStateSnapshot(cmState* state = nullptr);
   cmStateSnapshot(cmState* state, cmStateDetail::PositionType position);
 
+  std::vector<std::pair<std::string, std::string>> GetDefinitions() const;
   std::string const* GetDefinition(std::string const& name) const;
   bool IsInitialized(std::string const& name) const;
   void SetDefinition(std::string const& name, cm::string_view value);

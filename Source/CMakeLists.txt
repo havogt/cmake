@@ -722,6 +722,8 @@ set(SRCS
   cmDuration.cxx
 
   bindexplib.cxx
+  
+  cmakedbg.cxx 
   )
 
 SET_PROPERTY(SOURCE cmProcessOutput.cxx APPEND PROPERTY COMPILE_DEFINITIONS
@@ -1153,10 +1155,19 @@ if(APPLE)
   target_link_libraries(OSXScriptLauncher "-framework CoreFoundation")
 endif()
 
+include(FetchContent)
+FetchContent_Declare(
+  cppdap
+  GIT_REPOSITORY https://github.com/google/cppdap.git
+  GIT_TAG        main
+)
+FetchContent_MakeAvailable(cppdap)
+
 # Build CMake executable
-add_executable(cmake cmakemain.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
+add_executable(cmake cmakemain.cxx cmakedap.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
 list(APPEND _tools cmake)
-target_link_libraries(cmake CMakeLib)
+target_link_libraries(cmake CMakeLib cppdap)
+target_compile_definitions(cmake PRIVATE LOG_TO_FILE="/home/vogtha/git/cmake/tmp/cmakedbg.log")
 
 # Build CTest executable
 add_executable(ctest ctest.cxx ${MANIFEST_FILE})
